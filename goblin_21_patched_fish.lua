@@ -103,8 +103,8 @@ local CFG = {
 	talk = true,             -- false = ไม่คุยกับ goblin เลย
 	levels = { easy = true, normal = false, hard = false, extreme = false, ultimate = false },
 	fishSpots = {
-		-- perfect = { pos = Vector3.new(0, 0, 0), look = Vector3.new(0, 0, -1) },
-		-- fcatch  = { pos = Vector3.new(0, 0, 0), look = Vector3.new(0, 0, -1) },
+		perfect = { pos = Vector3.new(357.5, 133.7, 235.6), look = Vector3.new(-0.79, -0.61, -0.01) },
+		fcatch  = { pos = Vector3.new(-14509.1, 143.6, -9556.2), look = Vector3.new(0.08, -0.70, 0.71) },
 	},
 	fishMax = 720,   -- ตกนานสุดกี่วินาทีต่อเควส (เผื่อเวลากลับไปส่ง)
 	fishStall = 300, -- ตัวนับ HUD ไม่ขยับกี่วินาที -> เลิก
@@ -2089,7 +2089,8 @@ local function markSpot()
 		return
 	end
 	local p = hrp.Position
-	CFG.islandPos[lastIsl[1]] = p
+	local old = CFG.islandPos[lastIsl[1]]
+	if not old or (old - p).Magnitude < 600 then CFG.islandPos[lastIsl[1]] = p end
 	log(('SPOT SAVED ["%s"] = Vector3.new(%.0f, %.0f, %.0f),'):format(lastIsl[1], p.X, p.Y, p.Z))
 	local cam = workspace.CurrentCamera
 	local lk = cam and cam.CFrame.LookVector or hrp.CFrame.LookVector
@@ -2212,6 +2213,10 @@ wd.doFish = function(o, kind)
 	local spot = CFG.fishSpots and CFG.fishSpots[kind]
 	if spot and spot.pos then
 		setStatus("fish: go to spot")
+		if spot.pos.X < -10000 and not ensureHallow() then
+			log("NOTE: FISH: could not sail to Hallow")
+			return false
+		end
 		pcall(goTo, CFrame.new(spot.pos))
 		wd.faceSpot(spot)
 	end
@@ -2358,7 +2363,7 @@ ensureHallow = function()
 				local ok, how = pcall(method)
 				if ok and how then
 					log("HALLOW: set sail via " .. how)
-					w = waitWitch(10)
+					w = waitWitch(25)
 					if w then
 						hallowAt = os.clock()
 						log("HALLOW: arrived, Witch loaded")
